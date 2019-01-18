@@ -1,15 +1,16 @@
-﻿using System;
+﻿using Ocelot.Configuration;
+using Ocelot.Logging;
+using Ocelot.Middleware;
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using Ocelot.Configuration;
-using Ocelot.Logging;
-using Ocelot.Middleware;
 
 namespace Ocelot.Requester
 {
     public class HttpClientBuilder : IHttpClientBuilder
     {
+        private readonly IPrimaryHttpClientHandlerFactory _primaryFactory;
         private readonly IDelegatingHandlerHandlerFactory _factory;
         private readonly IHttpClientCache _cacheHandlers;
         private readonly IOcelotLogger _logger;
@@ -19,10 +20,12 @@ namespace Ocelot.Requester
         private readonly TimeSpan _defaultTimeout;
 
         public HttpClientBuilder(
-            IDelegatingHandlerHandlerFactory factory, 
-            IHttpClientCache cacheHandlers, 
+            IPrimaryHttpClientHandlerFactory primaryFactory,
+            IDelegatingHandlerHandlerFactory factory,
+            IHttpClientCache cacheHandlers,
             IOcelotLogger logger)
         {
+            _primaryFactory = primaryFactory;
             _factory = factory;
             _cacheHandlers = cacheHandlers;
             _logger = logger;
@@ -55,7 +58,7 @@ namespace Ocelot.Requester
             }
 
             var timeout = context.DownstreamReRoute.QosOptions.TimeoutValue == 0
-                ? _defaultTimeout 
+                ? _defaultTimeout
                 : TimeSpan.FromMilliseconds(context.DownstreamReRoute.QosOptions.TimeoutValue);
 
             _httpClient = new HttpClient(CreateHttpMessageHandler(handler, context.DownstreamReRoute))
@@ -72,8 +75,8 @@ namespace Ocelot.Requester
         {
             // Dont' create the CookieContainer if UseCookies is not set or the HttpClient will complain
             // under .Net Full Framework
-            bool useCookies = context.DownstreamReRoute.HttpHandlerOptions.UseCookieContainer;
-            
+            var useCookies = context.DownstreamReRoute.HttpHandlerOptions.UseCookieContainer;
+
             if (useCookies)
             {
                 return UseCookiesHandler(context);
@@ -86,23 +89,21 @@ namespace Ocelot.Requester
 
         private HttpClientHandler UseNonCookiesHandler(DownstreamContext context)
         {
-            return new HttpClientHandler
-            {
-                AllowAutoRedirect = context.DownstreamReRoute.HttpHandlerOptions.AllowAutoRedirect,
-                UseCookies = context.DownstreamReRoute.HttpHandlerOptions.UseCookieContainer,
-                UseProxy = context.DownstreamReRoute.HttpHandlerOptions.UseProxy
-            };
+            var handler = _primaryFactory.Create(context, context.DownstreamReRoute.HttpHandlerOptions.PrimaryHandlerName);
+            handler.AllowAutoRedirect = context.DownstreamReRoute.HttpHandlerOptions.AllowAutoRedirect;
+            handler.UseCookies = context.DownstreamReRoute.HttpHandlerOptions.UseCookieContainer;
+            handler.UseProxy = context.DownstreamReRoute.HttpHandlerOptions.UseProxy;
+            return handler;
         }
 
         private HttpClientHandler UseCookiesHandler(DownstreamContext context)
         {
-            return new HttpClientHandler
-                {
-                    AllowAutoRedirect = context.DownstreamReRoute.HttpHandlerOptions.AllowAutoRedirect,
-                    UseCookies = context.DownstreamReRoute.HttpHandlerOptions.UseCookieContainer,
-                    UseProxy = context.DownstreamReRoute.HttpHandlerOptions.UseProxy,
-                    CookieContainer = new CookieContainer()
-                };
+            var handler = _primaryFactory.Create(context, context.DownstreamReRoute.HttpHandlerOptions.PrimaryHandlerName);
+            handler.AllowAutoRedirect = context.DownstreamReRoute.HttpHandlerOptions.AllowAutoRedirect;
+            handler.UseCookies = context.DownstreamReRoute.HttpHandlerOptions.UseCookieContainer;
+            handler.UseProxy = context.DownstreamReRoute.HttpHandlerOptions.UseProxy;
+            handler.CookieContainer = new CookieContainer();
+            return handler;
         }
 
         public void Save()

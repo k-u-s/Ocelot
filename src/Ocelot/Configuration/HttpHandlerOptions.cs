@@ -6,12 +6,13 @@
     /// </summary>
     public class HttpHandlerOptions
     {
-        public HttpHandlerOptions(bool allowAutoRedirect, bool useCookieContainer, bool useTracing, bool useProxy)
+        public HttpHandlerOptions(bool allowAutoRedirect, bool useCookieContainer, bool useTracing, bool useProxy, string primaryHandlerName)
         {
             AllowAutoRedirect = allowAutoRedirect;
             UseCookieContainer = useCookieContainer;
             UseTracing = useTracing;
             UseProxy = useProxy;
+            PrimaryHandlerName = primaryHandlerName;
         }
 
         /// <summary>
@@ -33,5 +34,10 @@
         /// Specify if handler has to use a proxy
         /// </summary>
         public bool UseProxy { get; private set; }
+
+        /// <summary>
+        /// Specify name used during primary http client handler creation
+        /// </summary>
+        public string PrimaryHandlerName { get; }
     }
 }

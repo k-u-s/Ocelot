@@ -6,6 +6,7 @@
         private bool _useCookieContainer;
         private bool _useTracing;
         private bool _useProxy;
+        private string _primaryHandlerName;
 
         public HttpHandlerOptionsBuilder WithAllowAutoRedirect(bool input)
         {
@@ -31,9 +32,13 @@
             return this;
         }
 
-        public HttpHandlerOptions Build()
+        public HttpHandlerOptionsBuilder WithPrimaryHandlerName(string primaryHandlerName)
         {
-            return new HttpHandlerOptions(_allowAutoRedirect, _useCookieContainer, _useTracing, _useProxy);
+            _primaryHandlerName = primaryHandlerName;
+            return this;
         }
+
+        public HttpHandlerOptions Build()
+            => new HttpHandlerOptions(_allowAutoRedirect, _useCookieContainer, _useTracing, _useProxy, _primaryHandlerName);
     }
 }
