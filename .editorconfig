@@ -7,3 +7,6 @@ insert_final_newline = true
 [*.cs]
 indent_style = space
 indent_size = 4
+csharp_prefer_braces = true : silent
+csharp_style_expression_bodied_methods = false : silent
+csharp_style_expression_bodied_constructors = false : silent
